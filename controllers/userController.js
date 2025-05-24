@@ -31,8 +31,33 @@ const createScrapedData = async (req, res) => {
 // Tüm scraped dataları getirir
 const getScrapedDatas = async (req, res) => {
   try {
-    const scrapedDatas = await ScrapedData.find();
+    const scrapedDatas = await ScrapedData.find({ isUsed: false });
     res.status(200).json(scrapedDatas);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+const markScrapedDataAsUsed = async (req, res) => {
+  try {
+    const { scrapedDataId } = req.body;
+
+    if (!scrapedDataId) {
+      return res.status(400).json({ message: 'scrapedDataId gerekli' });
+    }
+
+    const updatedScrapedData = await ScrapedData.findByIdAndUpdate(
+      scrapedDataId,
+      { isUsed: true },
+      { new: true } // Güncellenmiş dokümanı döner
+    );
+
+    if (!updatedScrapedData) {
+      return res.status(404).json({ message: 'Scraped data bulunamadı' });
+    }
+
+    res.status(200).json(updatedScrapedData);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -280,4 +305,5 @@ module.exports = {
   createVolunteerData,
   getVolunteerDatas,
   getDistrictCasesByCity,
+  markScrapedDataAsUsed,
 };
