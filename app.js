@@ -1,5 +1,6 @@
 const express = require('express');
 const dotenv = require('dotenv');
+const cors = require('cors'); // <-- CORS eklendi
 const connectDB = require('./config/db');
 const userRoutes = require('./routes/userRoutes');
 
@@ -8,6 +9,9 @@ dotenv.config();
 
 // Express uygulamasını oluştur
 const app = express();
+
+// CORS middleware (herkese izin ver)
+app.use(cors());
 
 // Middleware
 app.use(express.json());
