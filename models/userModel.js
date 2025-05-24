@@ -111,7 +111,7 @@ const filteredDataSchema = new mongoose.Schema({
   },
   address_link: {
     type: String,
-    required: [true, 'Address link is required'],
+    
   },
   address: {
     type: addressSchema,
