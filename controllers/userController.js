@@ -73,7 +73,6 @@ const createFilteredData = async (req, res) => {
       return res.status(400).json({ message: 'summary_note, address_link ve address (il, ilce, mahalle) zorunlu' });
     }
     const filteredData = new FilteredData({
-      userId: req.user._id, // JWT'den alınır
       scrapedDataId: req.body.scrapedDataId, // Gerekirse body'den alınır
       summary_note,
       address_link,
