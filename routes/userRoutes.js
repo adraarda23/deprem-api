@@ -11,6 +11,7 @@ const {
   getDistrictData,
   createVolunteerData,
   getVolunteerDatas,
+  getDistrictCasesByCity,
 } = require('../controllers/userController');
 const { authenticate, restrictToAdmin } = require('../middleware/middleware');
 
@@ -21,7 +22,8 @@ router.post('/create-admin', authenticate, createAdmin);
 router.post('/create-worker', authenticate, restrictToAdmin, createWorker);
 router.post('/sign-in', signIn);
 router.get('/filtered-datas/cities', authenticate, getCityCases);
-router.get('/filtered-datas/district/:ilce', authenticate, getDistrictData);
+router.get('/filtered-datas/district-cases/:il', authenticate, getDistrictCasesByCity);
+router.get('/filtered-datas/district/', authenticate, getDistrictData);
 router.post('/volunteer-datas', authenticate, createVolunteerData);
 router.get('/volunteer-datas', authenticate, getVolunteerDatas);
 

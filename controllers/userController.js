@@ -160,14 +160,50 @@ const getCityCases = async (req, res) => {
   }
 };
 
-// GET /filtered-datas/district/:ilce
-// Belirli bir ilçeye ait tüm verileri getirir
+
+// GET /filtered-datas/districts/:il
+// Belirtilen ile ait ilçelere göre vaka sayısını getirir
+const getDistrictCasesByCity = async (req, res) => {
+  const il = req.params.il;
+
+  try {
+    const cases = await FilteredData.aggregate([
+      {
+        $match: { 'address.il': il },
+      },
+      {
+        $group: {
+          _id: '$address.ilce',
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { _id: 1 },
+      },
+    ]);
+
+    res.status(200).json(cases.map(item => ({
+      ilce: item._id,
+      count: item.count,
+    })));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+
+// POST /filtered-datas/district
+// Belirli bir il ve ilçeye ait tüm verileri getirir
 const getDistrictData = async (req, res) => {
   try {
-    const { ilce } = req.params;
-    const data = await FilteredData.find({ 'address.ilce': ilce }).populate('userId', 'email role');
+    const { il, ilce } = req.body;
+    if (!il || !ilce) {
+      return res.status(400).json({ message: 'il ve ilce alanları zorunlu' });
+    }
+    const data = await FilteredData.find({ 'address.il': il, 'address.ilce': ilce });
     if (!data.length) {
-      return res.status(404).json({ message: 'Bu ilçeye ait veri bulunamadı' });
+      return res.status(404).json({ message: 'Bu il ve ilçeye ait veri bulunamadı' });
     }
     res.status(200).json(data);
   } catch (error) {
@@ -243,4 +279,5 @@ module.exports = {
   getDistrictData,
   createVolunteerData,
   getVolunteerDatas,
+  getDistrictCasesByCity,
 };
