@@ -68,8 +68,8 @@ const markScrapedDataAsUsed = async (req, res) => {
 // Yeni filtered data ekler
 const createFilteredData = async (req, res) => {
   try {
-    const { summary_note, address_link, address } = req.body;
-    if (!summary_note || !address_link || !address || !address.il || !address.ilce || !address.mahalle) {
+    const { summary_note,address_link, address } = req.body;
+    if (!summary_note || !address || !address.il || !address.ilce || !address.mahalle) {
       return res.status(400).json({ message: 'summary_note, address_link ve address (il, ilce, mahalle) zorunlu' });
     }
     const filteredData = new FilteredData({
