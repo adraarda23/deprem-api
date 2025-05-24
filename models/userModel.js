@@ -44,20 +44,25 @@ const addressSchema = new mongoose.Schema({
   il: {
     type: String,
     required: [true, 'City (il) is required'],
+    lowercase: true
   },
   ilce: {
     type: String,
     required: [true, 'District (ilçe) is required'],
+    lowercase: true,
   },
   mahalle: {
     type: String,
     required: [true, 'Neighborhood (mahalle) is required'],
+    lowercase: true,
   },
   cadde: {
     type: String,
+    lowercase: true,
   },
   sokak: {
     type: String,
+    lowercase: true,
   },
   No: {
     type: mongoose.Schema.Types.Mixed,
@@ -66,6 +71,7 @@ const addressSchema = new mongoose.Schema({
         return value == null || typeof value === 'string' || typeof value === 'number';
       },
       message: 'No must be a string or number',
+      lowercase: true,
     },
   },
 });
@@ -78,7 +84,6 @@ const scrapedDataSchema = new mongoose.Schema({
   },
   image_url: {
     type: String,
-    required: [true, 'Image URL is required'],
   },
   username: {
     type: String,
