@@ -87,11 +87,9 @@ const scrapedDataSchema = new mongoose.Schema({
   },
   username: {
     type: String,
-    required: [true, 'Username is required'],
   },
   tweetCreatedAt: {
     type: Date,
-    required: [true, 'Tweet creation time is required'],
   },
   createdAt: {
     type: Date,
@@ -111,7 +109,7 @@ const filteredDataSchema = new mongoose.Schema({
   },
   address_link: {
     type: String,
-    
+
   },
   address: {
     type: addressSchema,
