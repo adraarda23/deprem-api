@@ -26,7 +26,7 @@ router.get('/filtered-datas/cities', authenticate, getCityCases);
 router.get('/filtered-datas/district-cases/:il', authenticate, getDistrictCasesByCity);
 router.get('/filtered-datas/district/', authenticate, getDistrictData);
 router.post('/volunteer-datas', createVolunteerData);
-router.get('/volunteer-datas', authenticate, getVolunteerDatas);
+router.get('/volunteer-datas', getVolunteerDatas);
 router.post('/scraped-datas/mark-used', markScrapedDataAsUsed);
 
 module.exports = router;
