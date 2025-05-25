@@ -1,5 +1,12 @@
 const mongoose = require('mongoose');
 
+// Şifrelenmiş veri için alt şema
+const encryptedFieldSchema = new mongoose.Schema({
+  encryptedData: String,
+  iv: String,
+  authTag: String,
+});
+
 // User Schema (değişmedi)
 const userSchema = new mongoose.Schema({
   email: {
@@ -30,7 +37,7 @@ const userSchema = new mongoose.Schema({
       },
     },
     required: function () {
-      return this.role === 'worker'; // Sadece worker için zorunlu
+      return this.role === 'worker';
     },
   },
   createdAt: {
@@ -39,52 +46,15 @@ const userSchema = new mongoose.Schema({
   },
 });
 
-// Address Sub-Schema (değişmedi)
+// Address Sub-Schema (şifrelenmiş olarak saklanacak)
 const addressSchema = new mongoose.Schema({
-  il: {
-    type: String,
-    required: [true, 'City (il) is required'],
-    lowercase: true
-  },
-  ilce: {
-    type: String,
-    required: [true, 'District (ilçe) is required'],
-    lowercase: true,
-  },
-  mahalle: {
-    type: String,
-    required: [true, 'Neighborhood (mahalle) is required'],
-    lowercase: true,
-  },
-  cadde: {
-    type: String,
-    lowercase: true,
-  },
-  sokak: {
-    type: String,
-    lowercase: true,
-  },
-  No: {
-    type: mongoose.Schema.Types.Mixed,
-    validate: {
-      validator: function (value) {
-        return value == null || typeof value === 'string' || typeof value === 'number';
-      },
-      message: 'No must be a string or number',
-      lowercase: true,
-    },
-  },
+  encryptedAddress: encryptedFieldSchema, // Şifrelenmiş adres
 });
 
-// Scraped Data Schema (değişmedi)
+// Scraped Data Schema
 const scrapedDataSchema = new mongoose.Schema({
-  text: {
-    type: String,
-    required: [true, 'Text is required'],
-  },
-  image_url: {
-    type: String,
-  },
+  encryptedText: encryptedFieldSchema, // Şifrelenmiş text
+  encryptedImageUrl: encryptedFieldSchema, // Şifrelenmiş image_url
   username: {
     type: String,
   },
@@ -97,116 +67,43 @@ const scrapedDataSchema = new mongoose.Schema({
   },
   isUsed: {
     type: Boolean,
-    default: false, // Varsayılan olarak kullanılmamış
+    default: false,
   },
 });
 
-// Filtered Data Schema (değişmedi)
+// Filtered Data Schema
 const filteredDataSchema = new mongoose.Schema({
-  summary_note: {
-    type: String,
-    required: [true, 'Summary note is required'],
-  },
-  address_link: {
-    type: String,
-
-  },
-  address: {
-    type: addressSchema,
-    required: [true, 'Address is required'],
-  },
+  scrapedDataId: { type: mongoose.Schema.Types.ObjectId, ref: 'ScrapedData' },
+  encryptedSummary: encryptedFieldSchema, // Şifrelenmiş summary_note
+  encryptedAddressLink: encryptedFieldSchema, // Şifrelenmiş address_link
+  encryptedAddress: encryptedFieldSchema, // Şifrelenmiş adres
   createdAt: {
     type: Date,
     default: Date.now,
   },
 });
 
-// Volunteer Data Schema (alanlar required kaldırıldı)
-const volunteerDatasSchema = new mongoose.Schema({
-  ad_soyad: {
-    type: String,
-    required: [true, 'Ad Soyad is required'],
-    trim: true,
-  },
-  tc: {
-    type: Number,
-    required: [true, 'TC is required'],
-    unique: true,
-    validate: {
-      validator: function (value) {
-        return value.toString().length === 11;
-      },
-      message: 'TC must be an 11-digit number',
-    },
-  },
-  tel: {
-    type: Number,
-    required: [true, 'Telefon is required'],
-    validate: {
-      validator: function (value) {
-        return value.toString().length >= 10;
-      },
-      message: 'Telefon must be at least a 10-digit number',
-    },
-  },
-  eposta: {
-    type: String,
-    required: [true, 'E-posta is required'],
-    trim: true,
-    lowercase: true,
-    validate: {
-      validator: function (value) {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-      },
-      message: 'Invalid e-posta format',
-    },
-  },
-  yas: {
-    type: Number,
-    required: [true, 'Yaş is required'],
-    min: [0, 'Yaş cannot be negative'],
-    max: [120, 'Yaş cannot exceed 120'],
-  },
-  cinsiyet: {
-    type: String,
-    enum: ['erkek', 'kadın'],
-    required: [true, 'Cinsiyet is required'],
-  },
-  il: {
-    type: String,
-    required: [true, 'İl is required'],
-    trim: true,
-  },
-  ilce: {
-    type: String,
-    required: [true, 'İlçe is required'],
-    trim: true,
-  },
-  address: {
-    type: String,
-    trim: true,
-  },
-  yardimSertifikasi: {
-    type: Boolean,
-    required: [true, 'Yardım sertifikası durumu is required'],
-  },
-  alanlar: {
-    type: [String] // String dizisi, required kaldırıldı, isteğe bağlı
-  },
-  ozel_yetenekler: {
-    type: String,
-    trim: true,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+// Volunteer Data Schema
+const volunteerDataSchema = new mongoose.Schema({
+  encryptedAdSoyad: encryptedFieldSchema,
+  encryptedTc: encryptedFieldSchema, // unique: true kaldırıldı
+  encryptedTel: encryptedFieldSchema,
+  encryptedEposta: encryptedFieldSchema, // unique: true kaldırıldı
+  yas: { type: Number, required: true, min: 0, max: 120 },
+  cinsiyet: { type: String, enum: ['erkek', 'kadın'], required: true },
+  il: { type: String, required: true, trim: true },
+  ilce: { type: String, required: true, trim: true },
+  encryptedAddress: encryptedFieldSchema,
+  yardimSertifikasi: { type: Boolean, required: true },
+  alanlar: [String],
+  ozel_yetenekler: { type: String, trim: true },
+  createdAt: { type: Date, default: Date.now },
 });
 
 // Modelleri oluştur
 const User = mongoose.model('User', userSchema);
 const ScrapedData = mongoose.model('ScrapedData', scrapedDataSchema);
 const FilteredData = mongoose.model('FilteredData', filteredDataSchema);
-const VolunteerData = mongoose.model('VolunteerData', volunteerDatasSchema);
+const VolunteerData = mongoose.model('VolunteerData', volunteerDataSchema);
 
 module.exports = { User, ScrapedData, FilteredData, VolunteerData };
