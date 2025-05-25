@@ -7,7 +7,7 @@ const { User, ScrapedData, FilteredData, VolunteerData,Hashtag } = require('../m
 require('dotenv').config();
 
 const vault = require("node-vault")({
-  endpoint: process.env.VAULT_ADDR || 'http://127.0.0.1:8200',
+  endpoint: process.env.VAULT_ADDR || 'localhost:8200',
   token: process.env.VAULT_TOKEN
 });
 
@@ -340,14 +340,13 @@ const getDistrictCasesByCity = async (req, res) => {
 
 const getDistrictData = async (req, res) => {
   try {
-    // il ve ilce'yi alıyoruz ama kullanmayacağız
     const { il, ilce } = req.params;
 
     // Vault’tan anahtarı al
     const keyResult = await vault.read('secret/data/aes-key');
     const key = keyResult.data.data.master_key;
 
-    // Şifreli verileri bul
+    // Şifreli verileri getir
     const data = await FilteredData.find({ 'encryptedAddress.encryptedData': { $exists: true } });
 
     // Tüm verileri deşifre et
@@ -360,8 +359,7 @@ const getDistrictData = async (req, res) => {
           item.encryptedAddress.authTag
         );
 
-        const decryptedData = { ...item._doc };
-        decryptedData.address = decryptedAddress;
+        const decryptedData = { ...item._doc, address: decryptedAddress };
 
         if (item.encryptedSummary) {
           decryptedData.summary_note = await decryptData(
@@ -388,7 +386,13 @@ const getDistrictData = async (req, res) => {
       })
     );
 
-    res.status(200).json(decryptedDatas);
+    // Deşifre edilen verileri il ve ilçe'ye göre filtrele
+    const filteredData = decryptedDatas.filter((item) => {
+      const address = item.address.toLowerCase();
+      return address.includes(il.toLowerCase()) && address.includes(ilce.toLowerCase());
+    });
+
+    res.status(200).json(filteredData);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
