@@ -338,19 +338,19 @@ const getDistrictCasesByCity = async (req, res) => {
   }
 };
 
-// POST /filtered-datas/district
 const getDistrictData = async (req, res) => {
   try {
-    const { il, ilce } = req.body;
-    if (!il || !ilce) {
-      return res.status(400).json({ message: 'il ve ilce alanları zorunlu' });
-    }
+    // il ve ilce'yi alıyoruz ama kullanmayacağız
+    const { il, ilce } = req.params;
 
     // Vault’tan anahtarı al
     const keyResult = await vault.read('secret/data/aes-key');
     const key = keyResult.data.data.master_key;
 
+    // Şifreli verileri bul
     const data = await FilteredData.find({ 'encryptedAddress.encryptedData': { $exists: true } });
+
+    // Tüm verileri deşifre et
     const decryptedDatas = await Promise.all(
       data.map(async (item) => {
         const decryptedAddress = await decryptData(
@@ -359,47 +359,44 @@ const getDistrictData = async (req, res) => {
           item.encryptedAddress.iv,
           item.encryptedAddress.authTag
         );
-        // Büyük/küçük harfe duyarsız karşılaştırma
-        if (
-          decryptedAddress.il.toLowerCase() === il.toLowerCase() &&
-          decryptedAddress.ilce.toLowerCase() === ilce.toLowerCase()
-        ) {
-          const decryptedData = { ...item._doc };
-          decryptedData.address = decryptedAddress;
-          if (item.encryptedSummary) {
-            decryptedData.summary_note = await decryptData(
-              item.encryptedSummary.encryptedData,
-              key,
-              item.encryptedSummary.iv,
-              item.encryptedSummary.authTag
-            );
-            delete decryptedData.encryptedSummary;
-          }
-          if (item.encryptedAddressLink) {
-            decryptedData.address_link = await decryptData(
-              item.encryptedAddressLink.encryptedData,
-              key,
-              item.encryptedAddressLink.iv,
-              item.encryptedAddressLink.authTag
-            );
-            delete decryptedData.encryptedAddressLink;
-          }
-          delete decryptedData.encryptedAddress;
-          return decryptedData;
+
+        const decryptedData = { ...item._doc };
+        decryptedData.address = decryptedAddress;
+
+        if (item.encryptedSummary) {
+          decryptedData.summary_note = await decryptData(
+            item.encryptedSummary.encryptedData,
+            key,
+            item.encryptedSummary.iv,
+            item.encryptedSummary.authTag
+          );
+          delete decryptedData.encryptedSummary;
         }
-        return null;
+
+        if (item.encryptedAddressLink) {
+          decryptedData.address_link = await decryptData(
+            item.encryptedAddressLink.encryptedData,
+            key,
+            item.encryptedAddressLink.iv,
+            item.encryptedAddressLink.authTag
+          );
+          delete decryptedData.encryptedAddressLink;
+        }
+
+        delete decryptedData.encryptedAddress;
+        return decryptedData;
       })
     );
 
-    const filteredDatas = decryptedDatas.filter((item) => item !== null);
-    if (!filteredDatas.length) {
-      return res.status(404).json({ message: 'Bu il ve ilçeye ait veri bulunamadı' });
-    }
-    res.status(200).json(filteredDatas);
+    res.status(200).json(decryptedDatas);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
+
+// Update the route to use URL parameters
+
 
 const createVolunteerData = async (req, res) => {
   try {

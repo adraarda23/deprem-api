@@ -31,7 +31,22 @@ const restrictToAdmin = async (req, res, next) => {
   }
 };
 
+
+const restrictToAdminAndSuperAdmin = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id); // JWT'den alınan userId
+    
+    if (!user || (user.role !== 'admin' && user.role !== 'superadmin')) {
+      return res.status(403).json({ message: 'Bu işlem için yetkiniz yok, sadece admin veya superadmin rolü' });
+    }
+    next();
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
 module.exports = {
   authenticate,
   restrictToAdmin,
+  restrictToAdminAndSuperAdmin
 };
