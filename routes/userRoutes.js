@@ -13,6 +13,12 @@ const {
   getVolunteerDatas,
   getDistrictCasesByCity,
   markScrapedDataAsUsed,
+  deleteFilteredData,
+  createHashtag,
+  getAllHashtags,
+  updateHashtag,
+  deleteHashtag
+
 } = require('../controllers/userController');
 const { authenticate, restrictToAdmin } = require('../middleware/middleware');
 
@@ -28,5 +34,10 @@ router.get('/filtered-datas/district/', authenticate, getDistrictData);
 router.post('/volunteer-datas', createVolunteerData);
 router.get('/volunteer-datas',authenticate, getVolunteerDatas);
 router.post('/scraped-datas/mark-used', markScrapedDataAsUsed);
+router.delete('/filtered-datas/:id', authenticate, deleteFilteredData);
+router.post('/hashtags', createHashtag);
+router.get('/hashtags', getAllHashtags);
+router.put('/hashtags/:id', updateHashtag);
+router.delete('/hashtags/:id',deleteHashtag);
 
 module.exports = router;

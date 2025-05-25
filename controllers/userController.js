@@ -3,12 +3,11 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Vault = require('node-vault');
 const crypto = require('crypto');
-const { User, ScrapedData, FilteredData, VolunteerData } = require('../models/userModel');
+const { User, ScrapedData, FilteredData, VolunteerData,Hashtag } = require('../models/userModel');
 require('dotenv').config();
 
 const vault = require("node-vault")({
-  apiVersion: 'v1',
-  endpoint: process.env.VAULT_ADDR || 'http://vaultcontainer:8200',
+  endpoint: process.env.VAULT_ADDR || 'http://127.0.0.1:8200',
   token: process.env.VAULT_TOKEN
 });
 
@@ -154,6 +153,24 @@ const createFilteredData = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+// DELETE /filtered-datas/:id
+const deleteFilteredData = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedData = await FilteredData.findByIdAndDelete(id);
+
+    if (!deletedData) {
+      return res.status(404).json({ message: 'Filtered data not found' });
+    }
+
+    res.status(200).json({ message: 'Filtered data deleted successfully', deletedData });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 // POST /create-admin
 const createAdmin = async (req, res) => {
@@ -599,6 +616,78 @@ const markScrapedDataAsUsed = async (req, res) => {
   }
 };
 
+
+// CREATE - Yeni hashtag ekle
+const createHashtag = async (req, res) => {
+  try {
+    const { tag } = req.body;
+
+    if (!tag || !tag.startsWith('#')) {
+      return res.status(400).json({ message: 'Hashtag # ile başlamalı ve boş olmamalı' });
+    }
+
+    const existing = await Hashtag.findOne({ tag });
+    if (existing) {
+      return res.status(409).json({ message: 'Hashtag zaten mevcut' });
+    }
+
+    const newHashtag = new Hashtag({ tag });
+    await newHashtag.save();
+    res.status(201).json(newHashtag);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// READ - Tüm hashtagleri getir
+const getAllHashtags = async (req, res) => {
+  try {
+    const hashtags = await Hashtag.find().sort({ createdAt: -1 });
+    res.status(200).json(hashtags);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// UPDATE - Bir hashtag’i güncelle (örneğin yazım hatası düzeltme)
+const updateHashtag = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { tag } = req.body;
+
+    if (!tag || !tag.startsWith('#')) {
+      return res.status(400).json({ message: 'Hashtag # ile başlamalı ve boş olmamalı' });
+    }
+
+    const updated = await Hashtag.findByIdAndUpdate(id, { tag }, { new: true });
+
+    if (!updated) {
+      return res.status(404).json({ message: 'Hashtag bulunamadı' });
+    }
+
+    res.status(200).json(updated);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// DELETE - Hashtag’i sil
+const deleteHashtag = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deleted = await Hashtag.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return res.status(404).json({ message: 'Hashtag bulunamadı' });
+    }
+
+    res.status(200).json({ message: 'Hashtag silindi', deleted });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createScrapedData,
   getScrapedDatas,
@@ -612,4 +701,9 @@ module.exports = {
   getVolunteerDatas,
   getDistrictCasesByCity,
   markScrapedDataAsUsed,
+  deleteFilteredData,
+  createHashtag,
+  getAllHashtags,
+  updateHashtag,
+  deleteHashtag
 };

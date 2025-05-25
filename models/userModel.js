@@ -100,10 +100,20 @@ const volunteerDataSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+const HashtagSchema = new mongoose.Schema({
+  tag: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+  },
+}, { timestamps: true });
+
 // Modelleri oluştur
 const User = mongoose.model('User', userSchema);
 const ScrapedData = mongoose.model('ScrapedData', scrapedDataSchema);
 const FilteredData = mongoose.model('FilteredData', filteredDataSchema);
 const VolunteerData = mongoose.model('VolunteerData', volunteerDataSchema);
+const Hashtag = mongoose.model('Hashtag', HashtagSchema);
 
-module.exports = { User, ScrapedData, FilteredData, VolunteerData };
+module.exports = { User, ScrapedData, FilteredData, VolunteerData,Hashtag };
