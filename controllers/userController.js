@@ -6,11 +6,12 @@ const crypto = require('crypto');
 const { User, ScrapedData, FilteredData, VolunteerData } = require('../models/userModel');
 require('dotenv').config();
 
-// Vault yapılandırması
-const vault = Vault({
-  endpoint: process.env.VAULT_ENDPOINT || 'http://127.0.0.1:8200',
-  token: process.env.VAULT_TOKEN,
+const vault = require("node-vault")({
+  apiVersion: 'v1',
+  endpoint: process.env.VAULT_ADDR || 'http://vaultcontainer:8200',
+  token: process.env.VAULT_TOKEN
 });
+
 
 // AES şifreleme fonksiyonu
 async function encryptData(data, key) {
