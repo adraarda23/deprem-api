@@ -7,7 +7,7 @@ const { User, ScrapedData, FilteredData, VolunteerData,Hashtag } = require('../m
 require('dotenv').config();
 
 const vault = require("node-vault")({
-  endpoint: process.env.VAULT_ADDR || 'localhost:8200',
+  endpoint: process.env.VAULT_ADDR || 'http://127.0.0.1:8200',
   token: process.env.VAULT_TOKEN
 });
 
@@ -340,16 +340,16 @@ const getDistrictCasesByCity = async (req, res) => {
 
 const getDistrictData = async (req, res) => {
   try {
-    const { il, ilce } = req.params;
+    const { il, ilce } = req.params; // Changed from req.body to req.params
+    if (!il || !ilce) {
+      return res.status(400).json({ message: 'il ve ilce alanları zorunlu' });
+    }
 
     // Vault’tan anahtarı al
     const keyResult = await vault.read('secret/data/aes-key');
     const key = keyResult.data.data.master_key;
 
-    // Şifreli verileri getir
     const data = await FilteredData.find({ 'encryptedAddress.encryptedData': { $exists: true } });
-
-    // Tüm verileri deşifre et
     const decryptedDatas = await Promise.all(
       data.map(async (item) => {
         const decryptedAddress = await decryptData(
@@ -358,41 +358,45 @@ const getDistrictData = async (req, res) => {
           item.encryptedAddress.iv,
           item.encryptedAddress.authTag
         );
-
-        const decryptedData = { ...item._doc, address: decryptedAddress };
-
-        if (item.encryptedSummary) {
-          decryptedData.summary_note = await decryptData(
-            item.encryptedSummary.encryptedData,
-            key,
-            item.encryptedSummary.iv,
-            item.encryptedSummary.authTag
-          );
-          delete decryptedData.encryptedSummary;
+        // Büyük/küçük harfe duyarsız karşılaştırma
+        if (
+          decryptedAddress.il &&
+          decryptedAddress.ilce &&
+          decryptedAddress.il.toLowerCase() === il.toLowerCase() &&
+          decryptedAddress.ilce.toLowerCase() === ilce.toLowerCase()
+        ) {
+          const decryptedData = { ...item._doc };
+          decryptedData.address = decryptedAddress;
+          if (item.encryptedSummary) {
+            decryptedData.summary_note = await decryptData(
+              item.encryptedSummary.encryptedData,
+              key,
+              item.encryptedSummary.iv,
+              item.encryptedSummary.authTag
+            );
+            delete decryptedData.encryptedSummary;
+          }
+          if (item.encryptedAddressLink) {
+            decryptedData.address_link = await decryptData(
+              item.encryptedAddressLink.encryptedData,
+              key,
+              item.encryptedAddressLink.iv,
+              item.encryptedAddressLink.authTag
+            );
+            delete decryptedData.encryptedAddressLink;
+          }
+          delete decryptedData.encryptedAddress;
+          return decryptedData;
         }
-
-        if (item.encryptedAddressLink) {
-          decryptedData.address_link = await decryptData(
-            item.encryptedAddressLink.encryptedData,
-            key,
-            item.encryptedAddressLink.iv,
-            item.encryptedAddressLink.authTag
-          );
-          delete decryptedData.encryptedAddressLink;
-        }
-
-        delete decryptedData.encryptedAddress;
-        return decryptedData;
+        return null;
       })
     );
 
-    // Deşifre edilen verileri il ve ilçe'ye göre filtrele
-    const filteredData = decryptedDatas.filter((item) => {
-      const address = item.address.toLowerCase();
-      return address.includes(il.toLowerCase()) && address.includes(ilce.toLowerCase());
-    });
-
-    res.status(200).json(filteredData);
+    const filteredDatas = decryptedDatas.filter((item) => item !== null);
+    if (!filteredDatas.length) {
+      return res.status(404).json({ message: 'Bu il ve ilçeye ait veri bulunamadı' });
+    }
+    res.status(200).json(filteredDatas);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
