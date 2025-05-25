@@ -221,27 +221,41 @@ const createWorker = async (req, res) => {
   }
 };
 
-// POST /sign-in
 const signIn = async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
       return res.status(400).json({ message: 'Email ve password zorunlu' });
     }
+
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({ message: 'Geçersiz email veya şifre' });
     }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Geçersiz email veya şifre' });
     }
+
     const token = jwt.sign(
       { _id: user._id, role: user.role },
       process.env.JWT_SECRET || 'your_jwt_secret',
       { expiresIn: '1h' }
     );
-    res.status(200).json({ token, user: { _id: user._id, email: user.email, role: user.role } });
+
+    const userData = {
+      _id: user._id,
+      email: user.email,
+      role: user.role,
+    };
+
+    if (user.role === 'worker') {
+      userData.workArea = user.workArea;
+    }
+
+    res.status(200).json({ token, user: userData });
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
